@@ -1,0 +1,13 @@
+Overpass web request (not used)
+https://overpass-api.de/api/map?bbox=9.6072,53.6782,9.7888,53.7988
+
+Coordinates
+53.6782,9.6072,53.7988,9.7888
+
+overpass query
+(
+   node(53.6782,9.6072,53.7988,9.7888);
+   <;
+);
+out meta;
+
