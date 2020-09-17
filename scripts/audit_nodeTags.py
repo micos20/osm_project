@@ -88,3 +88,48 @@ def check4reg_keys(keys, output=False, out_depth=5):
                 if i >= out_depth: break
     return match_in_other_type
 
+def unique_keys(keys):
+    unique_keys = 0
+    for type in keys:
+        unique_keys += len(keys[type])
+    return unique_keys
+    
+def audit_values(osm_file, output=False, out_depth=5):
+    #problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
+    problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\.\t\r\n]')
+    splitOnColon = re.compile(r'.*:([^:]*)$')
+    probl_chars = defaultdict(set)
+    
+    for node in get_element(osm_file, tags=('node',)):
+        for tag in node.iter('tag'):
+            k = tag.get('k')
+            # Use last colon separated value only in 'k' to determine the data type
+            if ':' in k:
+                k = splitOnColon.match(k)[1]     
+            v = tag.get('v')
+            if problemchars.search(v):
+                probl_chars[k].add(v)
+    
+    if output == True:
+        i = 0
+        print('Problematic characters found in', len(probl_chars), 'keys.')
+        for key in sorted(probl_chars, key=lambda x: len(probl_chars[x]), reverse=True):
+            i += 1 
+            print(key+":", len(probl_chars[key]))
+            if i >= out_depth: break
+            
+    return probl_chars
+    
+ 
+def audit_addr(osm_file, output=False, out_depth=5):
+    streets = set()
+    postcodes = set()
+    
+    for node in get_element(osm_file, tags=('node',)):
+        for tag in node.iter('tag'): 
+            if tag.get('k') == 'addr:street':
+                streets.add(tag.get('v'))
+            elif tag.get('k') == 'addr:postcode':
+                postcodes.add(tag.get('v'))
+                
+    return streets, postcodes
