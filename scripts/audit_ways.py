@@ -32,11 +32,13 @@ def audit_way_id(osm_file, output=False):
         if way_id > max_way_id: max_way_id = way_id
         if way_id < min_way_id: min_way_id = way_id       
 
+    # Output
     if output == True:
         print("Number of false way id type: ", len(false_way_types))
         if len(false_way_types) > 0: print("False ids: ", false_waye_types)
         print("Max way id: ", max_way_id)
         print("Min way id: ", min_way_id)
+    
     return {'false_way_types': false_way_types,
             'max_way_Id': max_way_id,
             'min_way_Id': min_way_id}
@@ -181,16 +183,20 @@ def audit_way_nodes(osm_file, output=False):
     - referenced node exists?
     '''
     
-    false_types = []        # List for all invalid data types found
-    node_list = defaultdict(int)
-    ref_node_not_found = set()
-    ways_ref_mis = defaultdict(set)
+    false_types = []                    # List for all invalid data types found
+    node_list = defaultdict(int)        # dict holding all node ids in dataset
+    ref_node_not_found = set()          # Set of ref nodes witch aren't in the dataset
+    ways_ref_mis = defaultdict(set)     # Ways affected by missing ref nodes
+    ways_wo_ref = []                    # List for ways w/o any referenced node found in dataset
     
+    # Fill 'node_list' with all node tag ids in dataset
     for node in (elm for _, elm in ET.iterparse(osm_file, events=('start', )) if elm.tag == 'node'):
         node_list[node.get('id')] = 1
         
+    # Checks on way nodes
     for element in get_element(osm_file, tags=('way',)):
         pos = 0
+        any_refNode_found = False
         for way_nd in element.iter('nd'):
             node_ref = way_nd.get('ref')
             # Check data type
@@ -199,16 +205,23 @@ def audit_way_nodes(osm_file, output=False):
                                     'node_ref': node_ref,
                                     'position': pos})
                 continue
-            if node_list[way_nd.get('ref')] != 1:
-                ref_node_not_found.add(way_nd.get('ref'))
-                ways_ref_mis[element.get('id')].add(pos)
+            # Check if referenced node is in node_list (in the dataset)
+            if node_list[way_nd.get('ref')] != 1:           # If node not found ...
+                ref_node_not_found.add(way_nd.get('ref'))   # add the node id to ref_node_not_found
+                ways_ref_mis[element.get('id')].add(pos)    # add way element to way_ref_mis 
+            else: any_refNode_found = True      # There is at least one ref node found  
             pos += 1    
+        if not any_refNode_found:                   # If there is no ref node found for this way ... 
+            ways_wo_ref.append(element.get('id'))   # add way to this list
     
+    # Just output
     if output == True:
         print("Number of falsy types: ", len(false_types))
         if len(false_types) > 0: print("False types: ", false_types)
         print("N° of missing references: ", len(ref_node_not_found))
-        print("N° of ways affected by missing references: ", len(ways_ref_mis))       
+        print("N° of ways affected by missing references: ", len(ways_ref_mis)) 
+        print("N° of ways w/o any referenced node found:", len(ways_wo_ref))
+        if len(ways_wo_ref) > 0: print("Way ids w/o reference nodes found:", ways_wo_ref)
         
-    return false_types, ref_node_not_found, ways_ref_mis
+    return false_types, ref_node_not_found, ways_ref_mis, ways_wo_ref
 

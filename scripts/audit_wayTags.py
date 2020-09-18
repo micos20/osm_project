@@ -14,8 +14,8 @@ def audit_keys(osm_file, output=False, out_depth=5):
     UPPER = set()
     probl_chars = set()
 
-    for node in get_element(osm_file, tags=('node',)):
-        for tag in node.iter('tag'):
+    for way in get_element(osm_file, tags=('way',)):
+        for tag in way.iter('tag'):
             k = tag.get('k')
             if not lower.match(k):
                 UPPER.add(k)
@@ -44,7 +44,7 @@ def audit_keys(osm_file, output=False, out_depth=5):
                 i += 1
                 print("\t", key)
                 if i >= out_depth: break
-        print("Number of unique node types: ", len(keys))
+        print("Number of unique way types: ", len(keys))
         if len(keys) > 0: 
             i = 0
             print("List of types followed by number of keys per type plus 3 keys (first {}):".format(out_depth))
@@ -101,12 +101,12 @@ def audit_values(osm_file, output=False, out_depth=5):
     probl_chars = defaultdict(set)
     missing_values = defaultdict(set)           # Dict holding missing key values (k) for nodes {node id: (key1, key2, ...)}
     
-    for node in get_element(osm_file, tags=('node',)):
-        for tag in node.iter('tag'):
+    for way in get_element(osm_file, tags=('way',)):
+        for tag in way.iter('tag'):
             k = tag.get('k')
             # Use last colon separated value only in 'k' to determine the data type
-            if ':' in k:
-                k = splitOnColon.match(k)[1]     
+            #if ':' in k:
+            #    k = splitOnColon.match(k)[1]     
             v = tag.get('v')
             if v == '' or v == None or v == 'NULL':
                 missing_values[node.get('id')].add(tag.get('k'))
@@ -130,12 +130,15 @@ def audit_values(osm_file, output=False, out_depth=5):
 def audit_addr(osm_file, output=False, out_depth=5):
     streets = set()
     postcodes = set()
+    countries = set()
     
-    for node in get_element(osm_file, tags=('node',)):
-        for tag in node.iter('tag'): 
+    for way in get_element(osm_file, tags=('way',)):
+        for tag in way.iter('tag'): 
             if tag.get('k') == 'addr:street':
                 streets.add(tag.get('v'))
             elif tag.get('k') == 'addr:postcode':
                 postcodes.add(tag.get('v'))
+            elif tag.get('k') == 'addr:country':
+                countries.add(tag.get('v'))            
                 
-    return streets, postcodes
+    return streets, postcodes, countries

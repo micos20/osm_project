@@ -55,6 +55,18 @@ def cast_type(value, value_type):
         except:
             return False
 
-
+def lookup_key(keys, search):
+    '''
+    Checks OSM key dict for 'search' pattern
+    OSM key has the structure: {type: (key1, key1, key3, ...], ...}  
+    Returns number the matching type:key values
+    '''
+    result = []
+    for type in keys.keys():            
+        for key in keys[type]:
+            string = type + ":" + key
+            if string.find(search) >= 0:
+                result.append(string)
+    return result
 
     
