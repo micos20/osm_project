@@ -69,4 +69,15 @@ def lookup_key(keys, search):
                 result.append(string)
     return result
 
-    
+def check_weblink(link):
+    '''
+    Send http request to given url 
+    Returns status of request:
+        - True when no error occured
+        - False when an error occured or the link is broken
+    '''
+    try:
+        r = requests.head(link, timeout=4., allow_redirects=True)
+    except:
+        return False
+    return r.status_code == requests.codes.ok    
