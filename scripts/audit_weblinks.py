@@ -52,7 +52,7 @@ def weblinks_by_value(osm_file):
         
     return weblinks
     
-def check_url(url):
+def check_url(osm_file):
     webkeys     = ['website', 'url', 'image', 'removed:website', 'contact:website', 
                    'source', 'contact:facebook', 'internet_access:ssid', 'note']
     regex_weblink = re.compile(r'^(https?://)?(www\.)?(.*\.[a-zA-Z]{2,6})($|/{1}.*)$')
@@ -65,11 +65,17 @@ def check_url(url):
     # Parsing the file
     for tag in (elm for _, elm in ET.iterparse(osm_file, events=('start', )) if elm.tag == 'tag'):
         if tag.get('k') in webkeys:
-            old_url = tag.get('v').rstrip('/')
-            new_url = update_webkey(old_url)
+            match = regex_weblink.match(tag.get('v'))
+            if match != None:
+                old_url = tag.get('v').rstrip('/')
+                new_url = update_webkey(match)
+                #print(new_url)
+            else:
+                continue   
             
             if new_url == '':
                 broken_links.append(old_url)
+                continue
             
             old_sub = regex_weblink.match(old_url).group(4)
             new_sub = regex_weblink.match(new_url).group(4)
@@ -85,42 +91,40 @@ def check_url(url):
     return secure_links, insecure_links, broken_links, modified_links
         
         
-def update_webkey(value):            
-    regex_weblink = re.compile(r'^(https?://)?(www\.)?(.*\.[a-zA-Z]{2,6})($|/{1}.*)$')        
+def update_webkey(match):                  
     reg = re.compile(r'/[^/]*$')            
-    url = ''   # Destination url
     
-    value.rstrip("/")
-    match = regex_weblink.match(value)
-    if match != None:         
-        # check if https works
-        url = "https://" + match.group(3) + match.group(4)
+    sublink = match.group(4).rstrip("/")
+    hostlink = match.group(3)
+        
+    # check if https works
+    url = "https://" + hostlink + sublink
+    if check_weblink(url):
+        return url
+    
+    # check for http
+    url = "http://" + hostlink + sublink
+    print(url)
+    if check_weblink(url):
+        return url        
+    
+    # Set prfix of url
+    if match.group(1) == "https://":
+        prefix = "https://"
+    else:   
+        url = "https://" + match.group(3)
+        if check_weblink(url):
+            prefix = "https://"
+        else:
+            prefix = "http://"
+                
+    # Modify url subpart and check if link remains broken
+    n = len(sublink.lstrip('/').split('/'))
+    for _ in range(n):
+        sublink = reg.sub('', sublink, 1)
+        url = prefix + hostlink + sublink
         if check_weblink(url):
             return url
-        
-        # check for http
-        url = "http://" + match.group(3) + match.group(4)
-        if check_weblink(url):
-            return url        
-        
-        # Set prfix of url
-        if match.group(1) == "https://":
-            prefix = "https://"
-        else:   
-            url = "https://" + match.group(3)
-            if check_weblink(url):
-                prefix = "https://"
-            else:
-                prefix = "http://"
-                    
-        # Modify url subpart and check if link remains broken
-        sublink = match.group(4)
-        n = len(sublink.lstrip('/').split('/'))
-        for _ in range(n):
-            sublink = reg.sub('', sublink, 1)
-            url = prefix + match.group(3) + sublink
-            if check_weblink(url):
-                return url
                 
     # Link broken or other problem
     return ''
