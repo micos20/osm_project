@@ -52,46 +52,60 @@ def weblinks_by_value(osm_file):
         
     return weblinks
     
-def check_url(osm_file):
+def check_url(osm_file, output=False, JSON=False):
     webkeys     = ['website', 'url', 'image', 'removed:website', 'contact:website', 
                    'source', 'contact:facebook', 'internet_access:ssid', 'note']
     regex_weblink = re.compile(r'^(https?://)?(www\.)?(.*\.[a-zA-Z]{2,6})($|/{1}.*)$')
     
-    modified_links = []
-    broken_links = []
-    secure_links = []
-    insecure_links = []
-
+    weblink_LUT = {}
+    stats = defaultdict(list)
+    
     # Parsing the file
     for tag in (elm for _, elm in ET.iterparse(osm_file, events=('start', )) if elm.tag == 'tag'):
         if tag.get('k') in webkeys:
             match = regex_weblink.match(tag.get('v'))
             if match != None:
-                old_url = tag.get('v').rstrip('/')
-                new_url = update_webkey(match)
-                #print(new_url)
+                new_url = update_webkey(match, weblink_LUT)
+
+    # Output
+    if output == True:
+        for oldlink, newlink in weblink_LUT.items():
+            if newlink == False:
+                stats['broken links'].append(oldlink)
+                continue               
+                
+            if oldlink.find('https:') == 0:
+                stats['old secure links'].append(oldlink)
+            elif oldlink.find('http:') == 0:
+                stats['old insecure links'].append(oldlink)
             else:
-                continue   
+                stats['old undef links'].append(oldlink)
             
-            if new_url == '':
-                broken_links.append(old_url)
-                continue
-            
-            old_sub = regex_weblink.match(old_url).group(4)
-            new_sub = regex_weblink.match(new_url).group(4)
+            if newlink.find('https:') == 0:
+                stats['new secure links'].append(newlink)
+            else:
+                stats['new insecure links'].append(newlink)
+                       
+            old_sub = regex_weblink.match(oldlink).group(4).strip('/')
+            new_sub = regex_weblink.match(newlink).group(4).strip('/')
             
             if old_sub != new_sub:
-                modified_links.append( (new_url, old_url) ) 
+                stats['modified links'].append( (oldlink, newlink) )
+                
+        # print stats
+        print("Nbr insecure urls:  old/{:>4d}   new/{:>4d}".format(len(stats['old insecure links']), len(stats['new insecure links'])))
+        print("Nbr secure urls:    old/{:>4d}   new/{:>4d}".format(len(stats['old secure links']), len(stats['new secure links'])))
+        print("Nbr missing schemes: ", len(stats['old undef links']))
+        print("Nbr modified links:  ", len(stats['modified links']))
+        print("Nbr broken links: ", len(stats['broken links']))
             
-            if new_url.find('https', 0, 4):
-                secure_links.append( (new_url, old_url) )
-            else:
-                insecure_links.append( (new_url, old_url) )
-        
-    return secure_links, insecure_links, broken_links, modified_links
+    if JSON == True:
+        pass
+  
+    return weblink_LUT, stats
         
         
-def update_webkey(match):                  
+def update_webkey(match, lut={}):                  
     reg = re.compile(r'/[^/]*$')            
     
     sublink = match.group(4).rstrip("/")
@@ -99,13 +113,14 @@ def update_webkey(match):
         
     # check if https works
     url = "https://" + hostlink + sublink
-    if check_weblink(url):
+    if check_weblink(url): 
+        lut[match.group(0)] = url
         return url
     
     # check for http
     url = "http://" + hostlink + sublink
-    print(url)
     if check_weblink(url):
+        lut[match.group(0)] = url
         return url        
     
     # Set prfix of url
@@ -124,9 +139,12 @@ def update_webkey(match):
         sublink = reg.sub('', sublink, 1)
         url = prefix + hostlink + sublink
         if check_weblink(url):
+            lut[match.group(0)] = url
             return url
                 
     # Link broken or other problem
+    lut[match.group(0)] = False
     return ''
 
-       
+
+

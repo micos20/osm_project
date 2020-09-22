@@ -12,6 +12,7 @@ import xml.etree.cElementTree as ET
 from datetime import datetime as dt, timedelta as td
 import pytz
 from dateutil import parser
+import requests
 
 
 def get_element(file, tags=('node', 'way', 'relation')):
@@ -70,14 +71,16 @@ def lookup_key(keys, search):
     return result
 
 def check_weblink(link):
-    '''
+    """
     Send http request to given url 
     Returns status of request:
         - True when no error occured
         - False when an error occured or the link is broken
-    '''
+    """   
     try:
-        r = requests.head(link, timeout=4., allow_redirects=True)
+        r = requests.head(link, timeout=4, allow_redirects=True)        
     except:
-        return False
+        return False    
     return r.status_code == requests.codes.ok    
+    
+    
