@@ -2,7 +2,7 @@
 # coding: utf-8
 
 # Import libraries
-from wrangle_hlp import get_element, cast_type, check_weblink
+from wrangle_hlp import get_element, cast_type, check_weblink, write_JSON
 from collections import defaultdict
 import re
 import xml.etree.cElementTree as ET
@@ -52,7 +52,7 @@ def weblinks_by_value(osm_file):
         
     return weblinks
     
-def check_url(osm_file, output=False, JSON=False):
+def check_url(osm_file, output=False, JSON_out=False):
     webkeys     = ['website', 'url', 'image', 'removed:website', 'contact:website', 
                    'source', 'contact:facebook', 'internet_access:ssid', 'note']
     regex_weblink = re.compile(r'^(https?://)?(www\.)?(.*\.[a-zA-Z]{2,6})($|/{1}.*)$')
@@ -63,9 +63,22 @@ def check_url(osm_file, output=False, JSON=False):
     # Parsing the file
     for tag in (elm for _, elm in ET.iterparse(osm_file, events=('start', )) if elm.tag == 'tag'):
         if tag.get('k') in webkeys:
-            match = regex_weblink.match(tag.get('v'))
+            match = regex_weblink.match(tag.get('v'))           
             if match != None:
-                new_url = update_webkey(match, weblink_LUT)
+                url = match.group(0)
+                if weblink_LUT.get(url, False):
+                    stats['doublicate'].append(url)
+                    continue
+                elif weblink_LUT.get(url.rstrip('/'), False):
+                    weblink_LUT[url] = weblink_LUT[url.rstrip('/')]
+                    stats['doublicate'].append(url)
+                    continue
+                elif weblink_LUT.get(url + '/', False):
+                    weblink_LUT[url] = weblink_LUT[url + '/']
+                    stats['doublicate'].append(url)
+                    continue
+                else:
+                    new_url = update_webkey(match, weblink_LUT)
 
     # Output
     if output == True:
@@ -95,13 +108,17 @@ def check_url(osm_file, output=False, JSON=False):
         # print stats
         print("Nbr insecure urls:  old/{:>4d}   new/{:>4d}".format(len(stats['old insecure links']), len(stats['new insecure links'])))
         print("Nbr secure urls:    old/{:>4d}   new/{:>4d}".format(len(stats['old secure links']), len(stats['new secure links'])))
-        print("Nbr missing schemes: ", len(stats['old undef links']))
-        print("Nbr modified links:  ", len(stats['modified links']))
-        print("Nbr broken links: ", len(stats['broken links']))
+        print("Nbr missing schemes: {:>4d}".format(len(stats['old undef links'])))
+        print("Nbr modified links:  {:>4d}".format(len(stats['modified links'])))
+        print("Nbr broken links:    {:>4d}".format(len(stats['broken links'])))
+        print("Ndr of doublicates:  {:>4d}".format(len(stats['doublicate'])))
             
-    if JSON == True:
-        pass
-  
+    if JSON_out != False:
+        if not write_JSON(weblink_LUT, JSON_out):
+            print("JSON output went wrong!")
+        else:
+            print("JSON output successful!")
+        
     return weblink_LUT, stats
         
         

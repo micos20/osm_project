@@ -13,6 +13,7 @@ from datetime import datetime as dt, timedelta as td
 import pytz
 from dateutil import parser
 import requests
+import json
 
 
 def get_element(file, tags=('node', 'way', 'relation')):
@@ -83,4 +84,11 @@ def check_weblink(link):
         return False    
     return r.status_code == requests.codes.ok    
     
+def write_JSON(data, filename):
+    try:
+        json.dump(data, open(filename, 'w'), sort_keys=True, indent=2)
+    except:
+        return False
+    return True
     
+ 
