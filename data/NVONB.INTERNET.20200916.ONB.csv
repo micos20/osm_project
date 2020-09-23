@@ -5201,4 +5201,42 @@ Ortsnetzkennzahl;Ortsnetzname;KennzeichenAktiv
 9976;Rötz;1
 9977;Arnschwang;1
 9978;Schönthal Oberpf;1
-
+150;Group3G (Quam) (GSM/UMTS);1
+151;Deutsche Telekom (GSM/UMTS);1
+160;Deutsche Telekom (GSM/UMTS);1
+170;Deutsche Telekom (GSM/UMTS);1
+171;Deutsche Telekom (GSM/UMTS);1
+175;Deutsche Telekom (GSM/UMTS);1
+152;Vodafone D2 (GSM/UMTS);1
+162;Vodafone D2 (GSM/UMTS);1
+172;Vodafone D2 (GSM/UMTS);1
+173;Vodafone D2 (GSM/UMTS);1
+174;Vodafone D2 (GSM/UMTS);1
+1521;let by Vodafone D2 to Lycamobile (MVNO);1
+1529;let by Vodafone D2 to Truphone (MVNO);1
+155;E-Plus (merging into o2 Germany) (GSM/UMTS);1
+157;E-Plus (merging into o2 Germany) (GSM/UMTS);1
+163;E-Plus (merging into o2 Germany) (GSM/UMTS);1
+177;E-Plus (merging into o2 Germany) (GSM/UMTS);1
+178;E-Plus (merging into o2 Germany) (GSM/UMTS);1
+1570;formerly let by E-Plus to defunct Telogic (formerly ViStream) (MVNO);1
+1575;let by E-Plus to Ring Mobilfunk (MVNO);1
+1579;let by E-Plus to sipgate subsidiary Vintage Wireless (MVNO);1
+159;o2 Germany (GSM/UMTS);1
+176;o2 Germany (GSM/UMTS);1
+179;o2 Germany (GSM/UMTS);1
+161;reserved; originally 1G cell phones (C-Netz);1
+164;e*message (pagers);1
+168;e*message (pagers);1
+169;e*message (pagers);1
+167;trunked radio systems;1
+180;service-oriented services;1
+181;international virtual private networks;1
+191;dial-up access to online services;1
+192;dial-up access to online services;1
+193;dial-up access to online services;1
+194;dial-up access to online services;1
+32;National subscriber numbers;1
+700;personal numbering;1
+800;freephone numbers;1
+900;premium-rate services;1
