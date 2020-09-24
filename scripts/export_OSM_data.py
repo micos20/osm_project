@@ -7,9 +7,10 @@ import re
 import xml.etree.cElementTree as ET
 import cerberus
 import schema
-from audit_phone import update_phone
+from audit_phone import update_phone, read_area_codes
 from audit_weblinks import lookup_webink
-from wrangle_hlp import get_element, validate_element, UnicodeDictWriter, read_JSON
+#from wrangle_hlp import get_element, validate_element, read_JSON
+import wrangle_hlp as wh
 
 # Set path to OSM data sets
 OSM_PATH = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'   # reduced data set
@@ -37,6 +38,12 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
                   problem_chars=PROBLEMCHARS, default_tag_type='regular'):
     """Clean and shape node or way XML element to Python dict"""
 
+    # Keys were phone numbers can be found
+    phone_keys = ('phone', 'phone2', 'fax', 'contact:phone', 'contact:fax', 
+                  'communication:mobile')
+    # Read German area codes from csv into dict
+    area_codes = read_area_codes('NVONB.INTERNET.20200916.ONB.csv')
+
     node_attribs = {}
     way_attribs = {}
     way_nodes = []
@@ -45,7 +52,15 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
     # collect tags from node or way elements
     for tag in element.iterfind("tag"):
         k = tag.get('k')
-        # if problem_chars.search(k): continue        
+        v = tag.get('v')
+        
+        # Normalize phone numbers
+        if v in phone_keys:
+            v = update_phone(v, area_codes)
+            # update_phone returns False if sth went wrong during fomating
+            # This will raise an exception during validation
+                
+        
         tag_dict = {}
         tag_dict['id'] = element.get('id')
         if ':' not in k:
@@ -89,17 +104,17 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
 def process_map(file_in, validate):
     """Iteratively process each XML element and write to csv(s)"""
 
-    with codecs.open(NODES_PATH, 'w') as nodes_file, \
-         codecs.open(NODE_TAGS_PATH, 'w') as nodes_tags_file, \
-         codecs.open(WAYS_PATH, 'w') as ways_file, \
-         codecs.open(WAY_NODES_PATH, 'w') as way_nodes_file, \
-         codecs.open(WAY_TAGS_PATH, 'w') as way_tags_file:
+    with open(NODES_PATH, 'w', newline='', encoding='utf-8') as nodes_file, \
+         open(NODE_TAGS_PATH, 'w', newline='', encoding='utf-8') as nodes_tags_file, \
+         open(WAYS_PATH, 'w', newline='', encoding='utf-8') as ways_file, \
+         open(WAY_NODES_PATH, 'w', newline='', encoding='utf-8') as way_nodes_file, \
+         open(WAY_TAGS_PATH, 'w', newline='', encoding='utf-8') as way_tags_file:
 
-        nodes_writer = UnicodeDictWriter(nodes_file, NODE_FIELDS)
-        node_tags_writer = UnicodeDictWriter(nodes_tags_file, NODE_TAGS_FIELDS)
-        ways_writer = UnicodeDictWriter(ways_file, WAY_FIELDS)
-        way_nodes_writer = UnicodeDictWriter(way_nodes_file, WAY_NODES_FIELDS)
-        way_tags_writer = UnicodeDictWriter(way_tags_file, WAY_TAGS_FIELDS)
+        nodes_writer = csv.DictWriter(nodes_file, NODE_FIELDS)
+        node_tags_writer = csv.DictWriter(nodes_tags_file, NODE_TAGS_FIELDS)
+        ways_writer = csv.DictWriter(ways_file, WAY_FIELDS)
+        way_nodes_writer = csv.DictWriter(way_nodes_file, WAY_NODES_FIELDS)
+        way_tags_writer = csv.DictWriter(way_tags_file, WAY_TAGS_FIELDS)
 
         nodes_writer.writeheader()
         node_tags_writer.writeheader()
@@ -109,11 +124,11 @@ def process_map(file_in, validate):
 
         validator = cerberus.Validator()
 
-        for element in get_element(file_in, tags=('node', 'way')):
+        for element in wh.get_element(file_in, tags=('node', 'way')):
             el = shape_element(element)
             if el:
                 if validate is True:
-                    validate_element(el, validator)
+                    wh.validate_element(el, validator, SCHEMA)
 
                 if element.tag == 'node':
                     nodes_writer.writerow(el['node'])
