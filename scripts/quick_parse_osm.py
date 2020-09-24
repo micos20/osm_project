@@ -13,3 +13,4 @@ def count_tags(filename):
         else:
             tags[elm.tag] = 1
     return tags
+    

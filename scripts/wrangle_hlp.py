@@ -75,7 +75,7 @@ def check_weblink(link):
     """
     Send http request to given url 
     Returns status of request:
-        - True when no error occured
+        - True when no error occured (status code 200)
         - False when an error occured or the link is broken
     """   
     try:
@@ -85,6 +85,11 @@ def check_weblink(link):
     return r.status_code == requests.codes.ok    
     
 def write_JSON(data, filename):
+    '''
+    Writes 'data' to 'filename' in JSON format. 
+    'data' must be of type dict. The items get sorted by key name.
+    Returns True if writing was successful, else returns False
+    '''
     try:
         json.dump(data, open(filename, 'w'), sort_keys=True, indent=2)
     except:
