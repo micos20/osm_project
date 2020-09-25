@@ -8,7 +8,6 @@ import xml.etree.cElementTree as ET
 import cerberus
 import schema
 from audit_phone import update_phone, read_area_codes
-from audit_weblinks import lookup_webink
 #from wrangle_hlp import get_element, validate_element, read_JSON
 import wrangle_hlp as wh
 
@@ -34,16 +33,19 @@ WAY_TAGS_FIELDS = ['id', 'key', 'value', 'type']
 WAY_NODES_FIELDS = ['id', 'node_id', 'position']
 PROBLEMCHARS = re.compile(r'[=\+/&<>;\'"\?%#$@\,\.\t\r\n]')
 
-def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIELDS,
+def shape_element(element, area_codes, weblink_lut, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIELDS,
                   problem_chars=PROBLEMCHARS, default_tag_type='regular'):
     """Clean and shape node or way XML element to Python dict"""
-
+   
     # Keys were phone numbers can be found
     phone_keys = ('phone', 'phone2', 'fax', 'contact:phone', 'contact:fax', 
                   'communication:mobile')
-    # Read German area codes from csv into dict
-    area_codes = read_area_codes('NVONB.INTERNET.20200916.ONB.csv')
-
+    # Keys were weblinks can be found
+    webkeys     = ('website', 'url', 'image', 'removed:website', 'contact:website', 
+                   'source', 'contact:facebook', 'internet_access:ssid', 'note')
+    # Regular expression to match weblinks
+    regex_weblink = re.compile(r'^(https?://)?(www\.)?(.*\.[a-zA-Z]{2,6})($|/{1}.*)$')
+    
     node_attribs = {}
     way_attribs = {}
     way_nodes = []
@@ -55,11 +57,20 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
         v = tag.get('v')
         
         # Normalize phone numbers
-        if v in phone_keys:
+        if k in phone_keys:
             v = update_phone(v, area_codes)
             # update_phone returns False if sth went wrong during fomating
             # This will raise an exception during validation
-                
+        
+        # Update weblinks
+        if k in webkeys:          
+            if regex_weblink.match(v) != None:        
+                # if weblink found in lut set v, else keep v as is 
+                new_url = weblink_lut.get(v, v)
+                if new_url is False:
+                    continue
+                else:
+                    v = new_url      
         
         tag_dict = {}
         tag_dict['id'] = element.get('id')
@@ -69,7 +80,7 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
         else:
             tag_dict['type'], tag_dict['key'] = k.split(':', 1)
 
-        tag_dict['value'] = tag.get('v')  
+        tag_dict['value'] = v 
         tags.append(tag_dict)    
      
     # collect node attributes
@@ -103,6 +114,14 @@ def shape_element(element, node_attr_fields=NODE_FIELDS, way_attr_fields=WAY_FIE
 
 def process_map(file_in, validate):
     """Iteratively process each XML element and write to csv(s)"""
+    
+    WEBLINK_LUT = '../data/weblink_lut.all_d200923.1.JSON'
+    #WEBLINK_LUT = '../data/weblink_lut.JSON'
+    # Read German area codes from csv into dict
+    area_codes = read_area_codes('../data/NVONB.INTERNET.20200916.ONB.csv')
+    # Import lookup table for weblinks
+    weblink_lut = wh.read_JSON(WEBLINK_LUT)
+
 
     with open(NODES_PATH, 'w', newline='', encoding='utf-8') as nodes_file, \
          open(NODE_TAGS_PATH, 'w', newline='', encoding='utf-8') as nodes_tags_file, \
@@ -125,7 +144,7 @@ def process_map(file_in, validate):
         validator = cerberus.Validator()
 
         for element in wh.get_element(file_in, tags=('node', 'way')):
-            el = shape_element(element)
+            el = shape_element(element, area_codes, weblink_lut)
             if el:
                 if validate is True:
                     wh.validate_element(el, validator, SCHEMA)

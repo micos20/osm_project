@@ -91,7 +91,7 @@ def write_JSON(data, filename):
     Returns True if writing was successful, else returns False
     '''
     try:
-        json.dump(data, open(filename, 'w'), sort_keys=True, indent=2)
+        json.dump(data, open(filename, 'w', encoding='utf-8'), sort_keys=True, indent=2)
     except:
         return False
     return True
@@ -106,5 +106,11 @@ def validate_element(element, validator, schema):
         raise Exception(message_string.format(field, error_string))
 
 def read_JSON(filename):
-    pass
+    '''
+    Reads 'filename' from JSON format. 
+    Returns a dict if successful, otherwise False
+    '''
+    with open(filename, 'r', encoding='utf-8') as json_data:
+        return json.load(json_data)
+      
     

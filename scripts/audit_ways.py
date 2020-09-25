@@ -9,6 +9,7 @@ import datetime
 from datetime import datetime as dt
 from dateutil import parser
 import xml.etree.cElementTree as ET
+import csv
 
 def audit_way_id(osm_file, output=False):
     ''' 
@@ -176,7 +177,7 @@ def audit_timestamp(osm_file, output=False):
             'earliest': earliest,
             'latest': latest}
             
-def audit_way_nodes(osm_file, output=False):
+def audit_way_nodes(osm_file, output=False, write_dummys=False):
     '''
     Auditing way_nodes
     - type is int?
@@ -214,6 +215,9 @@ def audit_way_nodes(osm_file, output=False):
         if not any_refNode_found:                   # If there is no ref node found for this way ... 
             ways_wo_ref.append(element.get('id'))   # add way to this list
     
+    if write_dummys is True:
+        write_dummy_nodes(ref_node_not_found)
+    
     # Just output
     if output == True:
         print("Number of falsy types: ", len(false_types))
@@ -225,3 +229,36 @@ def audit_way_nodes(osm_file, output=False):
         
     return false_types, ref_node_not_found, ways_ref_mis, ways_wo_ref
 
+def write_dummy_nodes(node_list):
+    '''
+    Write dummy nodes for all referenced nodes in ways which are outside bbox
+    of our investigated region.
+    '''  
+    # Prepare dicts with standard content for dummy node/ node tags
+    node_dict = {'lat': 0.0, 'lon': 0.0, 'user': 'dummy', 'uid': -1, 'version': 1,
+                 'changeset': -1, 'timestamp': '2020-09-25T00:00:00Z'}
+    node_tag_dict = {'key': 'note', 
+                     'value': 'Way ref dummy node outside bounding box',
+                     'type': 'regular'}
+    
+    with open('../data/dummy_nodes.csv', 'w', newline='', encoding='utf-8') as node_f, \
+         open('../data/dummy_nodes_tags.csv', 'w', newline='', encoding='utf-8') as node_tag_f:
+
+        nodes_writer = csv.DictWriter(node_f, fieldnames=['id', 'lat', 'lon', 'user', 'uid', 'version', 'changeset', 'timestamp'])
+        node_tags_writer = csv.DictWriter(node_tag_f, fieldnames=['id', 'key', 'value', 'type'])
+        
+        nodes_writer.writeheader()
+        node_tags_writer.writeheader()
+        
+        # Add node ids to nodes and node tags dict
+        for nd in node_list:
+            node_dict['id'] = nd
+            node_tag_dict['id'] = nd
+            nodes_writer.writerow(node_dict)
+            node_tags_writer.writerow(node_tag_dict)
+    
+    return True
+    
+    
+    
+    

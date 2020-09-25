@@ -162,7 +162,3 @@ def update_webkey(match, lut={}):
     # Link broken or other problem
     lut[match.group(0)] = False
     return ''
-
-def lookup_webink(LUT):
-    #Here is something
-    return None
