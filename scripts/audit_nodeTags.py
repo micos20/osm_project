@@ -6,14 +6,23 @@ from wrangle_hlp import get_element, cast_type
 from collections import defaultdict
 import re
 
-
 def audit_keys(osm_file, output=False, out_depth=5): 
+    '''
+    Audit node keys from OSM raw data
+    Returns all node keys in osm_file, problematic keys and keys containing capital letters.
+    '''
+    # Regex matching lower characters or colons or underscore
     lower = re.compile(r'^([a-z]|[_:])*$')
+    # Regex matching special/ problematic characters
     problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
+    # Dict containig node keys. Structure: {type: {key1, key2, key3, ...}}
     keys = defaultdict(set)
+    # Set containing all keys matching regex 'lower'
     UPPER = set()
+    # Set containing the keys with problematic characters
     probl_chars = set()
 
+    # Assess node tags
     for node in get_element(osm_file, tags=('node',)):
         for tag in node.iter('tag'):
             k = tag.get('k')
@@ -26,7 +35,8 @@ def audit_keys(osm_file, output=False, out_depth=5):
             else:
                 type, key = k.split(':', 1)
                 keys[type].add(key)
-
+    
+    # Print output if requested by 'output' attribute
     if output == True:
         print("Number of problematic keys: ", len(probl_chars))
         if len(probl_chars) > 0: 
@@ -56,7 +66,11 @@ def audit_keys(osm_file, output=False, out_depth=5):
     return UPPER, probl_chars, keys
     
 def keys_double(keys, output=False):     
-    # Can a regular key be a type?
+    ''' 
+    Checks if type variable is also found in 'keys' of 'regular' type
+    Input: keys dict (containing types and set of keys) returned by audit_keys function
+    Returns list of 
+    '''
     double_def = []
     for type in keys.keys():
         if type in keys['regular']: 
@@ -66,17 +80,23 @@ def keys_double(keys, output=False):
         print('All types that equal a "regular" key:', double_def)
     return double_def
  
- 
 def check4reg_keys(keys, output=False, out_depth=5):          
-    # Do we find 'regular' keys within the keys of other types?
+    '''
+    Do we find 'regular' keys within the keys of other types?
+    Input: keys dict (containing types and set of keys) returned by audit_keys function
+    Returns dict containing 
+    '''
+    # Initialize return dict
     match_in_other_type = defaultdict(set)
-    for key in keys['regular']:
-        for type in keys.keys():
+    
+    for key in keys['regular']:               # Iterate over keys in type regular
+        for type in keys.keys():              # Iterate over types
             if type == 'regular': continue    # Omit 'regular' type 
-            for type_key in keys[type]:
+            for type_key in keys[type]:       # Iterate over set of keys
                 if key in type_key.split(':'):
                     match_in_other_type[key].add(type + ":" + type_key)  
     
+    # Print output if requested by 'output' attribute
     if output == True:
         print("Number of 'regular' keys found in other types: ", len(match_in_other_type))
         if len(match_in_other_type) > 0: 
@@ -89,16 +109,28 @@ def check4reg_keys(keys, output=False, out_depth=5):
     return match_in_other_type
 
 def unique_keys(keys):
+    '''
+    Return number of unique keys
+    Input: keys dict (containing types and set of keys) returned by audit_keys function
+    '''
     unique_keys = 0
     for type in keys:
         unique_keys += len(keys[type])
     return unique_keys
     
 def audit_values(osm_file, output=False, out_depth=5):
-    #problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
+    '''
+    Audit node tag values
+    Input: osm_file
+    Returns dict containing problematic and missing values
+    '''
+    # Regex matching lower characters or colons or underscore
     problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\.\t\r\n]')
+    #problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
+    #Regex splitting strings on colons
     splitOnColon = re.compile(r'.*:([^:]*)$')
-    probl_chars = defaultdict(set)
+    
+    probl_chars = defaultdict(set)              # Dict for values with problematic characters
     missing_values = defaultdict(set)           # Dict holding missing key values (k) for nodes {node id: (key1, key2, ...)}
     
     for node in get_element(osm_file, tags=('node',)):
@@ -108,17 +140,20 @@ def audit_values(osm_file, output=False, out_depth=5):
             if ':' in k:
                 k = splitOnColon.match(k)[1]     
             v = tag.get('v')
+            # Check for missing values
             if v == '' or v == None or v == 'NULL':
                 missing_values[node.get('id')].add(tag.get('k'))
             elif problemchars.search(v):
                 probl_chars[k].add(v)
              
+    # Print output if requested by 'output' attribute
     if output == True:
         i = 0
         print('Missing values found for', len(missing_values), 'nodes')
         if len(missing_values) > 0: 
             print('List of missing values:', sorted(missing_values, key=lambda x: len(missing_values[x]), reversed=True))
         print('Problematic characters found in', len(probl_chars), 'keys.')
+        print('List of values with problematic characters:')
         for key in sorted(probl_chars, key=lambda x: len(probl_chars[x]), reverse=True):
             i += 1 
             print(key+":", len(probl_chars[key]))
@@ -139,3 +174,21 @@ def audit_addr(osm_file, output=False, out_depth=5):
                 postcodes.add(tag.get('v'))
                 
     return streets, postcodes
+    
+if __name__ == '__main__':
+    # osm data files
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=20.osm'
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'
+    osm_file = '../data/GE_SH_PI_elmshorn_uetersen.osm'
+    
+    # audit node keys
+    _, __, keys = audit_keys(osm_file, output=True, out_depth=10)
+    print("Print keys of type 'TMC'", keys['TMC'])
+    print("Number of unique keys:", unique_keys(keys))
+    print("\n")
+    print("Doublicate keys check")
+    keys_double(keys, output=True);
+    check4reg_keys(keys, output=True, out_depth=10);
+    
+    
+    

@@ -216,5 +216,31 @@ def audit_timestamp(osm_file, output=False):
             'earliest': earliest,
             'latest': latest}
             
-
-
+if __name__ == '__main__':
+    # osm data files
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=20.osm'
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'
+    osm_file = '../data/GE_SH_PI_elmshorn_uetersen.osm'
+    
+    # Bounding box of investigated area
+    minlongitude = 9.6072
+    maxlongitude = 9.7888
+    minlatitude = 53.6782
+    maxlatitude = 53.7988
+    
+    # Invoce node auditing functions  
+    print("Audit node id:")
+    audit_node_id(osm_file, output=True)
+    print("\n")
+    print("Audit coordinates (lon, lat):")
+    audit_coords(osm_file, minlon=minlongitude, maxlon=maxlongitude, minlat=minlatitude, maxlat=maxlatitude, output=True);
+    print("\n")
+    print("Audit users and user id:")    
+    audit_users(osm_file, output=True);
+    print("\n")
+    print("Audit versions and changesets for nodes:")       
+    audit_version_chset(osm_file, output=True);
+    print("\n")
+    print("Audit timestamps:") 
+    audit_timestamp(osm_file, output=True);
+    print("\n")
