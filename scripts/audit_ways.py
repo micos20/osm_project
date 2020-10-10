@@ -258,7 +258,31 @@ def write_dummy_nodes(node_list):
             node_tags_writer.writerow(node_tag_dict)
     
     return True
+
+if __name__ == '__main__':
+    '''
+    Invoke way auditing functions
+    The dummy nodes are not written unless you turn on 'write_dummys=True'
+      in the 'audit_way_nodes' function. This will overwrite the current dummy nodes file!
+    '''
+    # osm data files
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=20.osm'
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'
+    osm_file = '../data/GE_SH_PI_elmshorn_uetersen.osm'
     
-    
-    
-    
+    # Invoce node auditing functions  
+    print("Audit node id:")
+    audit_way_id(osm_file, output=True)
+    print("\n")
+    print("Audit users and user id:")
+    audit_users(osm_file, output=True)
+    print("\n")
+    print("Audit versions and changesets for nodes:")
+    audit_version_chset(osm_file, output=True)
+    print("\n")
+    print("Audit timestamps:") 
+    audit_timestamp(osm_file, output=True)
+    print("\n")
+    print("Audit way nodes references:")
+    false_type, not_refs, lost_ways, lostways = audit_way_nodes(osm_file, output=True, write_dummys=False)
+

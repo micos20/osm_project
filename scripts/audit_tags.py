@@ -23,7 +23,7 @@ def audit_keys(osm_file, output=False, out_depth=5):
     probl_chars = set()
 
     # Assess node tags
-    for node in get_element(osm_file, tags=('node',)):
+    for node in get_element(osm_file, tags=('node','way')):
         for tag in node.iter('tag'):
             k = tag.get('k')
             if not lower.match(k):
@@ -133,7 +133,7 @@ def audit_values(osm_file, output=False, out_depth=5):
     probl_chars = defaultdict(set)              # Dict for values with problematic characters
     missing_values = defaultdict(set)           # Dict holding missing key values (k) for nodes {node id: (key1, key2, ...)}
     
-    for node in get_element(osm_file, tags=('node',)):
+    for node in get_element(osm_file, tags=('node','way')):
         for tag in node.iter('tag'):
             k = tag.get('k')
             # Use last colon separated value only in 'k' to determine the data type
@@ -170,7 +170,7 @@ def audit_addr(osm_file, output=False, out_depth=5):
     streets = set()
     postcodes = set()
     
-    for node in get_element(osm_file, tags=('node',)):
+    for node in get_element(osm_file, tags=('node','way')):
         for tag in node.iter('tag'): 
             if tag.get('k') == 'addr:street':
                 streets.add(tag.get('v'))
@@ -194,6 +194,7 @@ if __name__ == '__main__':
     keys_double(keys, output=True);
     check4reg_keys(keys, output=True, out_depth=10);
     
+    print("\n")
     pbl_values, missing_values = audit_values(osm_file, output=True, out_depth=20)
     # Print name values starting with B
     print("\n")
