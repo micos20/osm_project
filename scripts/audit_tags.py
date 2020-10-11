@@ -2,14 +2,14 @@
 # coding: utf-8
 
 # Import libraries
-from wrangle_hlp import get_element, cast_type
+from wrangle_hlp import get_element, cast_type, lookup_key
 from collections import defaultdict
 import re
 
 def audit_keys(osm_file, output=False, out_depth=5): 
     '''
-    Audit node keys from OSM raw data
-    Returns all node keys in osm_file, problematic keys and keys containing capital letters.
+    Audit node and way keys from OSM raw data
+    Returns all node and way keys in osm_file, problematic keys and keys containing capital letters.
     '''
     # Regex matching lower characters or colons or underscore
     lower = re.compile(r'^([a-z]|[_:])*$')
@@ -23,8 +23,8 @@ def audit_keys(osm_file, output=False, out_depth=5):
     probl_chars = set()
 
     # Assess node tags
-    for node in get_element(osm_file, tags=('node','way')):
-        for tag in node.iter('tag'):
+    for elm in get_element(osm_file, tags=('node','way')):
+        for tag in elm.iter('tag'):
             k = tag.get('k')
             if not lower.match(k):
                 UPPER.add(k)
@@ -54,7 +54,7 @@ def audit_keys(osm_file, output=False, out_depth=5):
                 i += 1
                 print("\t", key)
                 if i >= out_depth: break
-        print("Number of unique node types: ", len(keys))
+        print("Number of unique types: ", len(keys))
         if len(keys) > 0: 
             i = 0
             print("List of types followed by number of keys per type plus 3 keys (first {}):".format(out_depth))
@@ -120,7 +120,7 @@ def unique_keys(keys):
     
 def audit_values(osm_file, output=False, out_depth=5):
     '''
-    Audit node tag values
+    Audit node and way tag values
     Input: osm_file
     Returns dict containing problematic and missing values
     '''
@@ -133,23 +133,23 @@ def audit_values(osm_file, output=False, out_depth=5):
     probl_chars = defaultdict(set)              # Dict for values with problematic characters
     missing_values = defaultdict(set)           # Dict holding missing key values (k) for nodes {node id: (key1, key2, ...)}
     
-    for node in get_element(osm_file, tags=('node','way')):
-        for tag in node.iter('tag'):
+    for elm in get_element(osm_file, tags=('node','way')):
+        for tag in elm.iter('tag'):
             k = tag.get('k')
             # Use last colon separated value only in 'k' to determine the data type
-            if ':' in k:
-                k = splitOnColon.match(k)[1]     
+            #if ':' in k:
+            #    k = splitOnColon.match(k)[1]     
             v = tag.get('v')
             # Check for missing values
             if v == '' or v == None or v == 'NULL':
-                missing_values[node.get('id')].add(tag.get('k'))
+                missing_values[elm.tag + "_" + elm.get('id')].add(tag.get('k'))
             elif problemchars.search(v):
                 probl_chars[k].add(v)
              
     # Print output if requested by 'output' attribute
     if output == True:
         i = 0
-        print('Missing values found for', len(missing_values), 'nodes')
+        print('Missing values found for', len(missing_values), 'nodes and ways.')
         if len(missing_values) > 0: 
             print('List of missing values:', sorted(missing_values, key=lambda x: len(missing_values[x]), reversed=True))
         print('Problematic characters found in', len(probl_chars), 'keys.')
@@ -169,6 +169,7 @@ def audit_addr(osm_file, output=False, out_depth=5):
     '''
     streets = set()
     postcodes = set()
+    countries = set()
     
     for node in get_element(osm_file, tags=('node','way')):
         for tag in node.iter('tag'): 
@@ -176,8 +177,10 @@ def audit_addr(osm_file, output=False, out_depth=5):
                 streets.add(tag.get('v'))
             elif tag.get('k') == 'addr:postcode':
                 postcodes.add(tag.get('v'))
+            elif tag.get('k') == 'addr:country':
+                countries.add(tag.get('v'))
                 
-    return streets, postcodes
+    return streets, postcodes, countries
     
 if __name__ == '__main__':
     # osm data files
@@ -185,16 +188,29 @@ if __name__ == '__main__':
     # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'
     osm_file = '../data/GE_SH_PI_elmshorn_uetersen.osm'
     
-    # audit node keys
+    # audit node/ way keys
     _, __, keys = audit_keys(osm_file, output=True, out_depth=10)
     print("Print keys of type 'TMC'", keys['TMC'])
-    print("Number of unique keys:", unique_keys(keys))
+    print("\n")
+    print("Print keys of type 'fuel'", keys['fuel'])
+    print("\n")
+    print("Find 'website' in keys: ", lookup_key(keys, 'website'))
+    print("\n")
+    print("Find 'shop' in keys: ", lookup_key(keys, 'shop'))   
+    print("\n")
+    print("Find 'phone' in keys: ", lookup_key(keys, 'phone'))
+    print("\n")
+    
+    print("Number of unique keys (or type/key combinations):", unique_keys(keys))
     print("\n")
     print("Doublicate keys check")
     keys_double(keys, output=True);
+    print("\n")
     check4reg_keys(keys, output=True, out_depth=10);
     
+    # Audit tag values
     print("\n")
+    print("Audit tag values:")
     pbl_values, missing_values = audit_values(osm_file, output=True, out_depth=20)
     # Print name values starting with B
     print("\n")
@@ -202,11 +218,29 @@ if __name__ == '__main__':
     for name in (n for n in pbl_values['name'] if n[0] == 'B'):
         print(name)
     
-    # Address auditing
-    streets, postcodes = audit_addr(osm_file)
     print("\n")
-    print("Number of streets in node tags (addr:street): ", len(streets))
-    print("Number of post codes in node tags (addr:postcode): ", len(postcodes))
+    print("Websites containing problematic values:")
+    for key, values in ((x, pbl_values[x.lstrip('regular:')]) for x in lookup_key(keys, 'website')):
+        print(key)
+        for item in values:
+            print(item)
+        print("\n")
+ 
+    print("\n")
+    print("Phone numbers containing problematic values:")
+    for key, values in ((x, pbl_values[x.lstrip('regular:')]) for x in lookup_key(keys, 'phone')):
+        print(key)
+        for item in values:
+            print(item)
+        print("\n") 
+      
+    # Address auditing
+    streets, postcodes, countries = audit_addr(osm_file)
+    print("\n")
+    print("Number of streets in node and way tags (addr:street): ", len(streets))
+    print("Number of post codes in node and way tags (addr:postcode): ", len(postcodes))
+    print("Number of countries in node and way tags (addr:country): ", len(countries))
+    print("Country codes: ", countries)
     print("\n")
     print("Street names containing string 'St': ")
     for street in streets:

@@ -9,7 +9,10 @@ import xml.etree.cElementTree as ET
 import requests
 
 def weblinks_by_key(osm_file):
-    webkeys = {'website', 'url', 'image', 'wikipedia'}      # key containing weblink suggested by OSM
+    '''
+    
+    '''
+    webkeys = {'website', 'url', 'image', 'wikipedia'}      # keys containing weblinks suggested by OSM
     weblinks = defaultdict(list)                            # Dict containing weblinks
     badlinks = defaultdict(list)                            # Dict containing bad links
     # Regex to match a weblink (intended to identify bad links)
@@ -162,3 +165,15 @@ def update_webkey(match, lut={}):
     # Link broken or other problem
     lut[match.group(0)] = False
     return ''
+    
+if __name__ == '__main__':
+    weblinks, badlinks = weblinks_by_key(osm_file)
+    
+    for i in range(10):
+        print(badlinks['wikipedia'][i])
+    
+    for i in range(10):
+        print(weblinks['image'][i])
+    
+    
+
