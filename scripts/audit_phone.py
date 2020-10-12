@@ -14,20 +14,25 @@ def audit_phone(osm_file, output=False):
     Audit phone numbers
     
     Takes osm data file and returns:
-    - list of touples for all phone numbers (old number, formatted number)
-    - list of problematic numbers which couldn't formatted properly
+    - list of tuples for all phone numbers (old number, formatted number)
+    - list of problematic numbers which couldn't be formatted properly
     - list of numbers containing problematic characters
+    - list of found area codes
     '''  
     # Selected  keys containing phone numbers
     phone_keys = ('phone', 'phone2', 'fax', 'contact:phone', 'contact:fax', 'communication:mobile')
-    phone_numbers = []
-    problematic_numbers = []
-    regex_special_chars = re.compile(r'[^\d+ ]')
-    special_chars = []
-    unique_area_codes = set()
+    
+    # Lists/ set to be filled and returned
+    phone_numbers = []                       # list of tuples for all phone numbers (old number, formatted number)
+    problematic_numbers = []                 # list of problematic numbers which couldn't be formatted properly
+    special_chars = []                       # list of numbers containing problematic characters
+    unique_area_codes = set()                # set tuples containing area codes and area name
+    
+    # Regex to find all phone numbers containing non-digit characters excluding '+' and ' ' 
+    regex_special_chars = re.compile(r'[^\d+ ]')  
     
     # Read German area codes from csv into dict
-    area_codes = read_area_codes('NVONB.INTERNET.20200916.ONB.csv')     
+    area_codes = read_area_codes('../data/NVONB.INTERNET.20200916.ONB.csv')     
 
     for tag in (elm for _, elm in ET.iterparse(osm_file, events=('start', )) if elm.tag == 'tag'):
         if tag.get('k') in phone_keys:
@@ -54,7 +59,7 @@ def audit_phone(osm_file, output=False):
     # Output
     if output == True:
         print("Nbr of phone numbers:", len(phone_numbers))
-        print("Nbr of uniqie area codes:", len(unique_area_codes))
+        print("Nbr of unique area codes:", len(unique_area_codes))
         print("Nbr of numbers containing non-digit characters:", len(special_chars))
         print("Nbr of problematic numbers (after cleaning):", len(problematic_numbers))
         print("Problematic numbers:")
@@ -75,7 +80,7 @@ def update_phone(nbr, area_codes):
     '''
     # Regex for extraction of German country code
     regex_country = re.compile(r'^ *((\+|00)49)')
-    # Regex to remove all non-numeric characters fron phone number (except '+')
+    # Regex to remove all non-numeric characters from phone number (except '+')
     regex_special = re.compile(r'[^\d+]+')
     
     number_list = []                # List of return numbers per key (normally only 1 number)
@@ -124,3 +129,32 @@ def read_area_codes(file):
         for row in reader:
             result[row[0]] = row[1]
     return result
+    
+    
+if __name__ == '__main__':
+    # osm data files
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=20.osm'
+    # osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'
+    osm_file = '../data/GE_SH_PI_elmshorn_uetersen.osm'
+    
+    print("Audit & clean phone numbers:")
+    print("Some statistics:")
+    phnbr, problm, special, areas = audit_phone(osm_file, output=True)
+    
+    print("\n")
+    print("Numbers containing special characters:")
+    for number in special:
+        print(number)
+        
+    print("\n")
+    print("Number of found area codes: ", len(areas) )
+    print("Area codes:")
+    for code in sorted(areas):
+        print("Area code: {0:>5d}, area name: {1}".format(int(code[0]), code[1]) )
+    
+    print("\n")
+    print("Updated phone numbers (before, after):")
+    for number in phnbr[100:110]:
+        print(number)
+    
+        

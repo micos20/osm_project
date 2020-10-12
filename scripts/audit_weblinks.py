@@ -223,5 +223,13 @@ if __name__ == '__main__':
         print(key + ":")
         for link in weblinks_val[key]:
             print(link)
+    
+    # Update wewblinks
+    # Change to smaller OSM file for weblink checks and updates
+    osm_file = '../data/GE_SH_PI_elmshorn_uetersen_k=100.osm'
+    print("\n")
+    print("Update weblinks:")
+    #lut, stats = weblink.check_url(osm_file, output=True, JSON_out='weblink_lut.JSON')
+    lut, stats = check_url(osm_file, output=True)
             
     
