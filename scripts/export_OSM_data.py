@@ -103,7 +103,7 @@ def shape_element(element, area_codes, weblink_lut, node_attr_fields=NODE_FIELDS
         # Fill node reference dict
         pos = 0
         for ref_node in element.iterfind('nd'):
-            node_dict = {}
+            node_dict = {} 
             node_dict['id'] = element.get('id')
             node_dict['node_id'] = ref_node.get('ref')
             node_dict['position'] = pos
