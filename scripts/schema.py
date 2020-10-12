@@ -1,6 +1,4 @@
-# Note: The schema is stored in a .py file in order to take advantage of the
-# int() and float() type coercion functions. Otherwise it could easily stored as
-# as JSON or another serialized format.
+# Schema to be used by cerberus module for data validation
 
 schema = {
     'node': {

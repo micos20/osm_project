@@ -25,6 +25,7 @@ WAY_TAGS_PATH = "../data/ways_tags.csv"
 # Import validation schema
 SCHEMA = schema.schema
 
+# CSV fields
 # Make sure the fields order in the csvs matches the column order in the sql table schema
 NODE_FIELDS = ['id', 'lat', 'lon', 'user', 'uid', 'version', 'changeset', 'timestamp']
 NODE_TAGS_FIELDS = ['id', 'key', 'value', 'type']
@@ -68,7 +69,7 @@ def shape_element(element, area_codes, weblink_lut, node_attr_fields=NODE_FIELDS
                 # if weblink found in lut set v, else keep v as is 
                 new_url = weblink_lut.get(v, v)
                 if new_url is False:
-                    continue
+                    continue            # If weblink is broken, skip link and continue
                 else:
                     v = new_url      
         
@@ -115,6 +116,7 @@ def shape_element(element, area_codes, weblink_lut, node_attr_fields=NODE_FIELDS
 def process_map(file_in, validate):
     """Iteratively process each XML element and write to csv(s)"""
     
+    # Link to weblink LUT JSON file
     WEBLINK_LUT = '../data/weblink_lut.all_d200923.1.JSON'
     #WEBLINK_LUT = '../data/weblink_lut.JSON'
     # Read German area codes from csv into dict
