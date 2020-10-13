@@ -131,6 +131,18 @@ uid	user	nbr_changesets	sum(elements)
 617520	sundew	69	3832
 63375	Divjo	38	3516
 
+# Verify results above
+SELECT uid, type, number FROM (
+SELECT uid, 'nodes' type, count(*) number FROM nodes
+WHERE uid=1205786
+UNION ALL 
+SELECT uid, 'ways' type, count(*) number FROM ways
+WHERE uid=1205786)
+=>
+uid	type	number
+1205786	nodes	42720
+1205786	ways	5990
+
 
 # Check problematic user names
 SELECT DISTINCT user, uid from nodes
@@ -183,12 +195,16 @@ RüFo
 Danny Ralph Cäsar
 Robert Röper
 
-SELECT DISTINCT user FROM users
-WHERE 
-user REGEXP '[<>]'
+SELECT DISTINCT user, uid from nodes
+WHERE user LIKE '%@%'
+UNION ALL
+SELECT DISTINCT user, uid from ways
+WHERE user REGEXP '[<>]';
 =>
-user
-<don>
+user	uid
+nit@bse	1041363
+@mmanuel	6526984
+<don>	45059
 
 # Create tags VIEW
 CREATE VIEW vw_tags
@@ -208,7 +224,7 @@ SELECT 'WAY' element,
   FROM ways_tags
 
 # Postcodes counts
-SELECT value postcode, count(*) FROM tags
+SELECT value postcode, count(*) FROM vw_tags
 WHERE key LIKE '%postcode%'
 GROUP BY value;
 =>
@@ -231,28 +247,28 @@ SELECT c.area_code, count(*) frequency FROM
 (SELECT *, substr(res, 1, end-1) area_code FROM
 (SELECT *, instr(res, ' ') end FROM
 (SELECT *, substr(value, pos+1) res FROM
-(SELECT *, instr(value, ' ') pos FROM tags
+(SELECT *, instr(value, ' ') pos FROM vw_tags
 WHERE key IN ('phone', 'phone2', 'fax', 'fax', 'mobile') AND
 type IN ('contact', 'communication', 'regular'))))) c
 GROUP BY c.area_code
 ORDER BY frequency DESC
 =>
-area_code	frequency
-4121	155
-4122	43
-4123	33
-4126	6
-4101	4
-40	3
-4120	3
-151	1
-152	1
-162	1
-176	1
-178	1
-32	1
-4821	1
-4922	1
+area_code  frequency
+4121       155
+4122       43
+4123       33
+4126       6
+4101       4
+40         3
+4120       3
+151        1
+152        1
+162        1
+176        1
+178        1
+32         1
+4821       1
+4922       1
 
 # Create changeset View
 CREATE VIEW vw_changesets
@@ -327,53 +343,62 @@ NODE	7202870052	amenity	cafe	regular
 WAY	117856213	amenity	cafe	regular
 WAY	511329270	amenity	cafe	regular
 
-SELECT id, value Cafe_name FROM vw_tags
-WHERE (element = 'NODE' AND key IN ('name') AND id IN
-(SELECT id FROM nodes_tags
-WHERE (type = 'amenity' OR key = 'amenity') AND value = 'cafe') )
-OR (element = 'WAY' AND key IN ('name') AND id IN
-(SELECT id FROM ways_tags
-WHERE (type = 'amenity' OR key = 'amenity') AND value = 'cafe') )
+#Show all cafes in the region
+SELECT c.element, c.id, n.name, cy.city FROM ( 
+SELECT element, id FROM vw_tags
+WHERE key = 'amenity' AND value = 'cafe') c
+LEFT OUTER JOIN (
+SELECT element, id, value name FROM vw_tags
+WHERE key='name') n
+ON c.id=n.id AND c.element=n.element
+LEFT OUTER JOIN (
+SELECT element, id, value city FROM vw_tags
+WHERE key='city') cy
+ON c.id=cy.id AND c.element=cy.element
+ORDER BY c.element, c.id 
 =>
-id	Cafe_name
-249752019	Café Langes Mühle
-270632008	Tommy's Eisbar
-281690707	Café Galerie Schlossgefängnis
-288893273	Uhlenhoff
-291902956	Rosenhof Kruse
-308946646	Die Pause
-385287257	Janny's Eis Cafe
-416915099	Café Kruschat
-416977988	Eis Cafe Südpol
-417459219	Eis Boutique
-1039130935	Jim Coffey
-1039131878	Diakonie-Cafe
-1039132160	Café Lykke
-1039237440	Eis Cafe Vittoria
-1314106748	Dielen-Café
-1314106802	Hof-Café
-2384582960	Keiser Eis
-2384613411	Bäckerei Eggers
-2833206591	Eiscafé Südpol
-2928174245	In Aller Munde
-2938199403	Ice Cafe Vittoria
-2954932162	Conny's
-2954932182	Juli
-2955746486	Cafe el Pasha
-2955746531	Smokey's Shisha Bar
-2955746532	Stadt Cafe
-2955756272	Buongiorno Caffe
-3669263093	Cafeteria (LMG)
-3669340850	Presse Café
-3677249172	Café Ambiente
-3817744150	Klinikcafe
-3895894037	Kaffee Klatsch
-6651534704	Kolls
-7202870052	Cafe Billy's Morgenduft
-117856213	Monroe's
-511329270	Plantenhoff Cafe
+element id          name                           city
+NODE    249752019   Café Langes Mühle              Uetersen
+NODE    270632008   Tommy's Eisbar                 Uetersen
+NODE    281690707   Café Galerie Schlossgefängnis  Barmstedt
+NODE    288893273   Uhlenhoff                      Kölln-Reisiek
+NODE    291902956   Rosenhof Kruse	
+NODE    308946646   Die Pause	
+NODE    385287257   Janny's Eis Cafe	
+NODE    416915099   Café Kruschat                  Elmshorn
+NODE    416977988   Eis Cafe Südpol	
+NODE    417459219   Eis Boutique	
+NODE    490524213   	
+NODE    1039130935  Jim Coffey	
+NODE    1039131878  Diakonie-Cafe	
+NODE    1039132160  Café Lykke	
+NODE    1039237440  Eis Cafe Vittoria	
+NODE    1314106748  Dielen-Café	
+NODE    1314106802  Hof-Café	
+NODE    2384582960  Keiser Eis	
+NODE    2384613411  Bäckerei Eggers	
+NODE    2833206591  Eiscafé Südpol                 Barmstedt
+NODE    2928174245  In Aller Munde	
+NODE    2938199403  Ice Cafe Vittoria	
+NODE    2944574838  	
+NODE    2954932162  Conny's	
+NODE    2954932182  Juli	
+NODE    2955746486  Cafe el Pasha	
+NODE    2955746531  Smokey's Shisha Bar	
+NODE    2955746532  Stadt Cafe	
+NODE    2955756272  Buongiorno Caffe               Elmshorn
+NODE    3669263093  Cafeteria (LMG)	
+NODE    3669340850  Presse Café                    Uetersen
+NODE    3677249172  Café Ambiente	
+NODE    3817744150  Klinikcafe	
+NODE    3895894037  Kaffee Klatsch                 Barmstedt
+NODE    6651534704  Kolls	
+NODE    7202870052  Cafe Billy's Morgenduft	
+WAY	    117856213   Monroe's                       Elmshorn
+WAY	    511329270   Plantenhoff Cafe               Groß Nordende
 
---> Two cafes w/o a name (node 490524213, 2944574838)
+
+
 
 # Show amenities
 SELECT value Type, COUNT(*) nbr FROM vw_tags
@@ -462,3 +487,13 @@ id	school_name
 
 5 schools w/o a name
 
+# Count number of nodes and ways
+SELECT type, number FROM (
+SELECT 'NODES' type, count(*) number FROM nodes
+WHERE id>0
+UNION ALL
+SELECT 'WAYS' type, count(*) number FROM ways);
+=>
+type	number
+NODES	258869
+WAYS	51297
