@@ -42,6 +42,8 @@ out meta;
 
 <figure><figcaption style="text-indent:10%">Investigated area: Germany, Schleswig-Hostein, Pinneberg, Elmshorn & Uetersen</figcaption></figure>
 
+The downloaded raw file can be found under [*./data/GE_SH_PI_elmshorn_uetersen.osm*](#list-of-files). There is also a reduced data set available called [*GE_SH_PI_elmshorn_uetersen_k=20.osm*](#list-of-files) for test purpose.
+
 <a style="font-size: small; font-style: italic" href=#table-of-content>Back to table of content.</a>
 
 ## Auditing OSM raw data  <a id="auditing-osm-raw-data"></a>
@@ -925,7 +927,16 @@ The following list shows the consulted references and websites.
 The following list shows python scripts used to assess and clean the OSM raw data. In addition files containing data (csv, JSON) created during auditing and cleaning are mentioned as well. The python scripts can be found in the sub-directory `./scripts/`, data files in the sub-directory `./data/`.
 
 <br/>
+
 <dl> 
+<dt style="font-style: italic; text-indent: 2%">GE_SH_PI_elmshorn_uetersen.osm</dt > 
+<dd style="text-indent: 4%">
+    XML file containing the Open Street Map (OSM) raw data.</dd> 
+<br/>
+<dt style="font-style: italic; text-indent: 2%">GE_SH_PI_elmshorn_uetersen_k=20.osm</dt > 
+<dd style="text-indent: 4%">
+    Reduced OSM data set for test purposes.</dd> 
+<br/>
 <dt style="font-style: italic; text-indent: 2%">wrangle_hlp.py</dt > 
 <dd style="text-indent: 4%">
     This script provides helping functions used throughout this investigation. The script is not intended to be run separately.</dd> 
@@ -978,6 +989,7 @@ The following list shows python scripts used to assess and clean the OSM raw dat
 <dd style="text-indent: 4%">
    Further SQL queries performed on osm.db</dd>
 </dl>
+
 
 
  <a style="font-size: small; font-style: italic" href=#table-of-content>Back to table of content.</a>
